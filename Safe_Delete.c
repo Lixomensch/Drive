@@ -12,8 +12,8 @@
 #define CLASS_NAME "delete_monitor_class"
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Seu Nome");
-MODULE_DESCRIPTION("Driver de módulo para monitorar a exclusão de arquivos");
+MODULE_AUTHOR("João Pedro");
+MODULE_DESCRIPTION("Driver de módulo para a exclusão de arquivos");
 
 static int majorNumber;
 static struct class* deleteMonitorClass = NULL;
@@ -37,65 +37,6 @@ static void delete_file_content(struct file *file);
 
 static int dev_open(struct inode *inodep, struct file *filep);
 static int dev_release(struct inode *inodep, struct file *filep);
-
-static struct file_operations fops = {
-    .open = dev_open,
-    .release = dev_release,
-};
-
-static int __init deleteMonitor_init(void) {
-    // Registro do driver com o kernel
-    majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
-    if (majorNumber < 0) {
-        printk(KERN_ALERT "Falha ao registrar o driver com o número %d\n", majorNumber);
-        return majorNumber;
-    }
-
-    // Registro da classe do dispositivo
-    deleteMonitorClass = class_create(THIS_MODULE, CLASS_NAME);
-    if (IS_ERR(deleteMonitorClass)) {
-        unregister_chrdev(majorNumber, DEVICE_NAME);
-        printk(KERN_ALERT "Falha ao registrar a classe do dispositivo\n");
-        return PTR_ERR(deleteMonitorClass);
-    }
-
-    // Registro do dispositivo no sistema
-    deleteMonitorDevice = device_create(deleteMonitorClass, NULL, MKDEV(majorNumber, 0), NULL, DEVICE_NAME);
-    if (IS_ERR(deleteMonitorDevice)) {
-        class_destroy(deleteMonitorClass);
-        unregister_chrdev(majorNumber, DEVICE_NAME);
-        printk(KERN_ALERT "Falha ao criar o dispositivo\n");
-        return PTR_ERR(deleteMonitorDevice);
-    }
-
-    printk(KERN_INFO "Driver de módulo carregado!\n");
-
-    return 0;
-}
-
-static void __exit deleteMonitor_exit(void) {
-    // Remoção do dispositivo
-    device_destroy(deleteMonitorClass, MKDEV(majorNumber, 0));
-
-    // Remoção da classe do dispositivo
-    class_unregister(deleteMonitorClass);
-    class_destroy(deleteMonitorClass);
-
-    // Desregistro do driver
-    unregister_chrdev(majorNumber, DEVICE_NAME);
-
-    printk(KERN_INFO "Driver de módulo descarregado!\n");
-}
-
-static int dev_open(struct inode *inodep, struct file *filep) {
-    printk(KERN_INFO "Dispositivo aberto\n");
-    return 0;
-}
-
-static int dev_release(struct inode *inodep, struct file *filep) {
-    printk(KERN_INFO "Dispositivo liberado\n");
-    return 0;
-}
 
 static void delete_file_content(struct file *file) {
     mm_segment_t old_fs;
@@ -161,6 +102,72 @@ static int setup_fsnotify(void) {
 static void cleanup_fsnotify(void) {
     fsnotify_remove_mark(delete_group, &fops);
     fsnotify_put_group(delete_group);
+}
+
+static int dev_open(struct inode *inodep, struct file *filep) {
+    printk(KERN_INFO "Dispositivo aberto\n");
+    return 0;
+}
+
+static int dev_release(struct inode *inodep, struct file *filep) {
+    printk(KERN_INFO "Dispositivo liberado\n");
+    return 0;
+}
+
+static int __init deleteMonitor_init(void) {
+    // Registro do driver com o kernel
+    majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
+    if (majorNumber < 0) {
+        printk(KERN_ALERT "Falha ao registrar o driver com o número %d\n", majorNumber);
+        return majorNumber;
+    }
+
+    // Registro da classe do dispositivo
+    deleteMonitorClass = class_create(THIS_MODULE, CLASS_NAME);
+    if (IS_ERR(deleteMonitorClass)) {
+        unregister_chrdev(majorNumber, DEVICE_NAME);
+        printk(KERN_ALERT "Falha ao registrar a classe do dispositivo\n");
+        return PTR_ERR(deleteMonitorClass);
+    }
+
+    // Registro do dispositivo no sistema
+    deleteMonitorDevice = device_create(deleteMonitorClass, NULL, MKDEV(majorNumber, 0), NULL, DEVICE_NAME);
+    if (IS_ERR(deleteMonitorDevice)) {
+        class_destroy(deleteMonitorClass);
+        unregister_chrdev(majorNumber, DEVICE_NAME);
+        printk(KERN_ALERT "Falha ao criar o dispositivo\n");
+        return PTR_ERR(deleteMonitorDevice);
+    }
+
+    // Configuração do sistema de notificação
+    if (setup_fsnotify() != 0) {
+        device_destroy(deleteMonitorClass, MKDEV(majorNumber, 0));
+        class_unregister(deleteMonitorClass);
+        class_destroy(deleteMonitorClass);
+        unregister_chrdev(majorNumber, DEVICE_NAME);
+        return -EFAULT;
+    }
+
+    printk(KERN_INFO "Driver de módulo carregado!\n");
+
+    return 0;
+}
+
+static void __exit deleteMonitor_exit(void) {
+    // Limpeza do sistema de notificação
+    cleanup_fsnotify();
+
+    // Remoção do dispositivo
+    device_destroy(deleteMonitorClass, MKDEV(majorNumber, 0));
+
+    // Remoção da classe do dispositivo
+    class_unregister(deleteMonitorClass);
+    class_destroy(deleteMonitorClass);
+
+    // Desregistro do driver
+    unregister_chrdev(majorNumber, DEVICE_NAME);
+
+    printk(KERN_INFO "Driver de módulo descarregado!\n");
 }
 
 module_init(deleteMonitor_init);
