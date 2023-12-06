@@ -10,7 +10,7 @@ struct net_device *fake_net;
 static int fake_net_open(struct net_device *net_dev)
 {
     // Endereço de hardware arbitrário para o dispositivo
-    u8 hw_address[6] = { 0x00, 0x12, 0x34, 0x56, 0x78, 0x00 };
+    u8 hw_address[6] = { 0x52, 0x1A, 0x2B, 0x4C, 0x8D, 0x9E };
 
     // Imprime informações sobre a abertura do dispositivo
     pr_info("%s - %s(%pK):\n", THIS_MODULE->name, __func__, net_dev);
