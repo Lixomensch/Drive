@@ -7,10 +7,10 @@
 struct net_device *fake_net;
 
 // Função chamada ao abrir o dispositivo de rede
-static int open(struct net_device *net_dev)
+static int fake_net_open(struct net_device *net_dev)
 {
     // Endereço de hardware arbitrário para o dispositivo
-    u8 hw_address[6] = { 0x52, 0x1A, 0x2B, 0x4C, 0x8D, 0x9E };
+    u8 hw_address[6] = { 0x00, 0x12, 0x34, 0x56, 0x78, 0x00 };
 
     // Imprime informações sobre a abertura do dispositivo
     pr_info("%s - %s(%pK):\n", THIS_MODULE->name, __func__, net_dev);
@@ -29,7 +29,7 @@ static int open(struct net_device *net_dev)
 }
 
 // Função chamada ao parar o dispositivo de rede
-static int stop(struct net_device *net_dev)
+static int fake_net_stop(struct net_device *net_dev)
 {
     // Imprime informações sobre a parada do dispositivo
     pr_info("%s - %s(%pK):\n", THIS_MODULE->name, __func__, net_dev);
@@ -41,7 +41,7 @@ static int stop(struct net_device *net_dev)
 }
 
 // Função chamada ao iniciar a transmissão de um pacote
-static int start(struct sk_buff *sk_b, struct net_device *src)
+static int fake_net_start(struct sk_buff *sk_b, struct net_device *src)
 {
     // Imprime informações sobre o início da transmissão
     pr_info("%s -%s(%pK, %pK)\n", THIS_MODULE->name, __func__, sk_b, src);
@@ -54,13 +54,13 @@ static int start(struct sk_buff *sk_b, struct net_device *src)
 
 // Estrutura de operações do dispositivo de rede
 static const struct net_device_ops fake_ops = {
-    .ndo_open       = open,
-    .ndo_stop       = stop,
-    .ndo_start_xmit = start,
+    .ndo_open       = fake_net_open,
+    .ndo_stop       = fake_net_stop,
+    .ndo_start_xmit = fake_net_start,
 };
 
 // Função de configuração do dispositivo de rede
-static void setup(struct net_device *net_dev)
+static void fake_net_setup(struct net_device *net_dev)
 {
     // Imprime informações sobre a configuração do dispositivo
     pr_info("%s - %s(%pK)\n", THIS_MODULE->name, __func__, net_dev);
@@ -73,13 +73,13 @@ static void setup(struct net_device *net_dev)
 }
 
 // Função chamada durante a inicialização do módulo
-static int __init init(void)
+static int __init fake_net_init(void)
 {
     // Imprime informações sobre a inicialização do módulo
     pr_info("%s - %s()\n", THIS_MODULE->name, __func__);
 
     // Aloca um dispositivo de rede virtual
-    fake_net = alloc_netdev(0, "ex%d", NET_NAME_UNKNOWN, setup);
+    fake_net = alloc_netdev(0, "ex%d", NET_NAME_UNKNOWN, fake_net_setup);
 
     // Verifica se a alocação foi bem-sucedida
     if (fake_net == NULL)
@@ -96,7 +96,7 @@ static int __init init(void)
 }
 
 // Função chamada durante a saída do módulo
-static void exit(void)
+static void fake_net_exit(void)
 {
     // Imprime informações sobre a saída do módulo
     pr_info("%s - %s()\n", THIS_MODULE->name, __func__);
@@ -109,8 +109,8 @@ static void exit(void)
 }
 
 // Macros para especificar as funções de inicialização e saída do módulo
-module_init(init)
-module_exit(exit)
+module_init(fake_net_init)
+module_exit(fake_net_exit)
 
 // Informações sobre o módulo
 MODULE_DESCRIPTION("Uma implementação de um dispositivo ficticio de rede");
