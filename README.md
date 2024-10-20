@@ -42,7 +42,7 @@ sudo rmmod fake_net
   
 - **Compatibilidade:** O módulo foi projetado para ser compatível com diferentes versões do kernel, adaptando-se à diferença nas operações de configuração do endereço de hardware.
 
-- **Licença:** Este projeto é distribuído sob a licença [GPL (General Public License)](LICENSE).
+- **Licença:** Este projeto é distribuído sob a licença [MIT License](LICENSE).
 
 ## Contribuições e Problemas
 
